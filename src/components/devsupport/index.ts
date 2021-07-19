@@ -1,5 +1,6 @@
 export {
   FalsyFC,
+  RenderFCProp,
   RenderProp,
 } from './components/falsyFC/falsyFC.component';
 export { FalsyText } from './components/falsyText/falsyText.component';
@@ -33,6 +34,7 @@ export {
   PropsService,
   TextStyleProps,
   FlexStyleProps,
+  FlexViewCrossStyleProps,
 } from './services/props/props.service';
 
 export * from './typings';

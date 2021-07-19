@@ -5,13 +5,18 @@
  */
 
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import {
+  StyleSheet,
+  BackHandler,
+  NativeEventSubscription,
+  Platform 
+} from 'react-native';
 import {
   Frame,
   MeasureElement,
   MeasuringElement,
   Point,
-  RenderProp,
+  RenderFCProp,
   Overwrite,
 } from '../../devsupport';
 import { ModalService } from '../../theme';
@@ -33,7 +38,7 @@ type PopoverModalProps = Overwrite<ModalProps, {
 }>;
 
 export interface PopoverProps extends PopoverViewProps, PopoverModalProps {
-  anchor: RenderProp;
+  anchor: RenderFCProp;
   fullWidth?: boolean;
 }
 
@@ -99,6 +104,7 @@ export class Popover extends React.Component<PopoverProps, State> {
     forceMeasure: false,
   };
 
+  private hardwareBackSubscription: NativeEventSubscription;
   private modalId: string;
   private contentPosition: Point = Point.outscreen();
   private placementService: PopoverPlacementService = new PopoverPlacementService();
@@ -130,6 +136,11 @@ export class Popover extends React.Component<PopoverProps, State> {
     this.modalId = ModalService.hide(this.modalId);
   };
 
+  private onHardwareBackPress = (): boolean => {
+    this.hide();
+    return false;
+  };
+
   public componentDidUpdate(prevProps: PopoverProps): void {
     if (!this.modalId && this.props.visible && !this.state.forceMeasure) {
       this.setState({ forceMeasure: true });
@@ -142,7 +153,14 @@ export class Popover extends React.Component<PopoverProps, State> {
     }
   }
 
+  public componentDidMount(): void {
+    if(Platform.OS === 'android') {
+      this.hardwareBackSubscription = BackHandler.addEventListener('hardwareBackPress', this.onHardwareBackPress);
+    }
+  }
+
   public componentWillUnmount(): void {
+    this.hardwareBackSubscription?.remove();
     this.hide();
   }
 
@@ -193,25 +211,28 @@ export class Popover extends React.Component<PopoverProps, State> {
         {...this.props}
         contentContainerStyle={[this.props.contentContainerStyle, styles.popoverView, this.contentFlexPosition]}
         placement={this.actualPlacement.reverse()}>
-        {this.renderContentElement()}
+          {this.renderContentElement()}
       </PopoverView>
     );
   };
 
   private renderMeasuringPopoverElement = (): MeasuringElement => {
     return (
-      <MeasureElement onMeasure={this.onContentMeasure}>
-        {this.renderPopoverElement()}
+      <MeasureElement 
+        shouldUseTopInsets={ModalService.getShouldUseTopInsets}
+        onMeasure={this.onContentMeasure}>
+          {this.renderPopoverElement()}
       </MeasureElement>
     );
   };
 
-  public render(): React.ReactElement {
+  public render(): React.ReactElement {    
     return (
       <MeasureElement
+        shouldUseTopInsets={ModalService.getShouldUseTopInsets}
         force={this.state.forceMeasure}
         onMeasure={this.onChildMeasure}>
-        {this.props.anchor()}
+          {this.props.anchor()}
       </MeasureElement>
     );
   }
